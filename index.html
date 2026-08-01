@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CinXphere | Unlimited Movies & TV Shows</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+
+
+    <header id="navbar">
+        <nav class="navbar">
+            <div class="logo" id="brandLogo">
+                <i class="fa-solid fa-film"></i>
+                <span>CinXphere</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#" id="navHome" class="active">Home</a></li>
+                <li><a href="#" id="navMovies">Movies</a></li>
+                <li><a href="#" id="navTV">TV Shows</a></li>
+                <li><a href="#" id="navMyList">My Watchlist</a></li>
+            </ul>
+            <div class="right-nav">
+                <div class="search-box">
+                    <input type="text" id="search" placeholder="Search movies or shows...">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <button class="login-btn" id="loginNavBtn"><i class="fa-solid fa-user"></i> Sign In</button>
+                <div class="user-avatar-menu" id="userAvatarMenu" style="display:none;">
+                    <div class="avatar-circle" id="userAvatarCircle"></div>
+                    <div class="avatar-dropdown" id="avatarDropdown">
+                        <div class="avatar-dropdown-header">
+                            <div class="avatar-dropdown-icon" id="avatarDropdownIcon"></div>
+                            <div>
+                                <p class="avatar-name" id="avatarDropdownName"></p>
+                                <p class="avatar-email" id="avatarDropdownEmail"></p>
+                            </div>
+                        </div>
+                        <hr class="avatar-divider">
+                        <button class="avatar-dropdown-item" id="dropdownMyList"><i class="fa-solid fa-heart"></i> My
+                            Watchlist</button>
+                        <button class="avatar-dropdown-item signout-item" id="dropdownSignOut"><i
+                                class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <section class="hero" id="heroBanner">
+        <div class="overlay">
+            <div class="hero-content">
+                <h1 id="heroTitle">CinXphere Catalog</h1>
+                <p id="heroOverview">Loading featured media stream...</p>
+                <div class="hero-buttons">
+                    <button class="watch" id="heroPlayBtn"><i class="fa-solid fa-play"></i> Watch Now</button>
+                    <button class="info" id="heroInfoBtn"><i class="fa-solid fa-circle-info"></i> More Info</button>
+                    <button class="change-featured" id="heroChangeBtn"><i class="fa-solid fa-shuffle"></i>
+                        Change</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main id="category-rows">
+    </main>
+
+    <section id="search-section" class="movie-section" style="display: none;">
+        <h2 id="search-heading">Search Results</h2>
+        <div id="search-grid" class="movie-grid">
+        </div>
+        <div id="pagination-controls" class="pagination" style="display: none;">
+            <button id="prevPageBtn" disabled><i class="fa-solid fa-chevron-left"></i> Prev</button>
+            <span id="pageIndicator">Page 1</span>
+            <button id="nextPageBtn">Next <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+    </section>
+
+    <section id="detail-section" style="display: none;">
+        <div class="detail-backdrop" id="detailBackdrop">
+            <div class="detail-overlay">
+                <button id="backToBrowseBtn" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back to
+                    Browse</button>
+            </div>
+        </div>
+        <div class="detail-content-wrapper">
+            <div class="detail-poster-container">
+                <img id="detailPoster" src="" alt="Poster">
+            </div>
+            <div class="detail-info">
+                <h1 id="detailTitle">Loading Title...</h1>
+                <div class="meta-row" style="margin-bottom: 20px; font-size: 16px;">
+                    <span>⭐ Rating: <strong id="detailRating">N/A</strong></span>
+                    <span>📅 Release: <strong id="detailDate">N/A</strong></span>
+                </div>
+                <p id="detailOverview"
+                    style="font-size: 17px; line-height: 1.8; color: #d1d1d1; margin-bottom: 30px; max-width: 800px;">
+                    Loading Overview...</p>
+
+                <div class="detail-buttons" style="display: flex; gap: 15px; margin-bottom: 50px; flex-wrap: wrap;">
+                    <button id="detailStreamBtn" class="primary-btn"><i class="fa-solid fa-play"></i> Watch Now</button>
+                    <button id="detailTrailerBtn" class="secondary-btn"><i class="fa-solid fa-clapperboard"></i> Play
+                        Trailer</button>
+                    <button id="detailSaveBtn" class="secondary-btn">❤️ My Watchlist</button>
+                </div>
+
+                <div id="detailTVSeasons" style="display: none; width: 100%;">
+                    <h3 style="font-size: 26px; margin-bottom: 20px; font-weight: 600;">Seasons & Episodes</h3>
+                    <select id="detailSeasonSelector"
+                        style="width: 100%; max-width: 250px; padding: 14px; background: rgba(31,31,31,0.8); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; outline: none; margin-bottom: 30px; font-size: 16px; backdrop-filter: blur(10px); cursor: pointer;"></select>
+                    <div id="detailEpisodesGrid"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-bottom: 50px;">
+                    </div>
+                </div>
+
+                <div id="detailVideoContainer"
+                    style="display: none; margin-bottom: 50px; width: 100%; max-width: 900px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Video Player Modal -->
+    <div id="player-modal" class="player-modal">
+        <div class="player-modal-content">
+            <div class="player-modal-header">
+                <div>
+                    <h2 id="playerModalTitle"></h2>
+                    <p id="playerModalSubtitle"></p>
+                </div>
+                <button id="playerCloseBtn" class="player-close-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="playerFrame" class="iframe-container"></div>
+        </div>
+    </div>
+
+    <!-- ========== AUTH MODAL ========== -->
+    <div id="authModal" class="auth-modal-overlay">
+        <div class="auth-modal-box">
+            <button class="auth-close-btn" id="authCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+
+            <!-- Tab Switcher -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tabLogin" data-tab="login">Sign In</button>
+                <button class="auth-tab" id="tabSignup" data-tab="signup">Sign Up</button>
+            </div>
+
+            <!-- Login Panel -->
+            <div class="auth-panel" id="panelLogin">
+                <div class="auth-brand">
+                    <i class="fa-solid fa-film"></i>
+                    <span>CinXphere</span>
+                </div>
+                <h2 class="auth-title">Welcome back</h2>
+                <p class="auth-subtitle">Sign in to access your watchlist and more</p>
+
+                <div class="auth-form" id="loginForm">
+                    <div class="auth-input-group">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" id="loginEmail" placeholder="Email address" autocomplete="email">
+                    </div>
+                    <div class="auth-input-group">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="loginPassword" placeholder="Password"
+                            autocomplete="current-password">
+                        <button class="toggle-pw" data-target="loginPassword" tabindex="-1"><i
+                                class="fa-solid fa-eye"></i></button>
+                    </div>
+                    <p class="auth-error" id="loginError"></p>
+                    <button class="auth-submit-btn" id="loginSubmitBtn">Sign In <i
+                            class="fa-solid fa-arrow-right"></i></button>
+                </div>
+
+                <p class="auth-switch">Don't have an account? <a href="#" id="goToSignup">Create one</a></p>
+            </div>
+
+            <!-- Sign Up Panel -->
+            <div class="auth-panel" id="panelSignup" style="display:none;">
+                <div class="auth-brand">
+                    <i class="fa-solid fa-film"></i>
+                    <span>CinXphere</span>
+                </div>
+                <h2 class="auth-title">Join CinXphere</h2>
+                <p class="auth-subtitle">Create your free account today</p>
+
+                <div class="auth-form" id="signupForm">
+                    <div class="auth-input-group">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="signupName" placeholder="Full name" autocomplete="name">
+                    </div>
+                    <div class="auth-input-group">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" id="signupEmail" placeholder="Email address" autocomplete="email">
+                    </div>
+                    <div class="auth-input-group">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="signupPassword" placeholder="Create password"
+                            autocomplete="new-password">
+                        <button class="toggle-pw" data-target="signupPassword" tabindex="-1"><i
+                                class="fa-solid fa-eye"></i></button>
+                    </div>
+                    <div class="auth-input-group">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <input type="password" id="signupConfirmPassword" placeholder="Confirm password"
+                            autocomplete="new-password">
+                    </div>
+                    <p class="auth-error" id="signupError"></p>
+                    <button class="auth-submit-btn" id="signupSubmitBtn">Create Account <i
+                            class="fa-solid fa-arrow-right"></i></button>
+                </div>
+
+                <p class="auth-switch">Already have an account? <a href="#" id="goToLogin">Sign in</a></p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-logo" style="text-align: center; margin-bottom: 25px;">
+            <div
+                style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-size: 32px; font-weight: 700; color: #e50914;">
+                <i class="fa-solid fa-film"></i>
+                <span>CinXphere</span>
+            </div>
+        </div>
+        <p class="disclaimer"
+            style="font-size: 13px; color: #a0a0a0; max-width: 900px; margin: 0 auto 30px; text-align: center; line-height: 1.6; padding: 0 20px;">
+            <strong style="color: #ddd;">Disclaimer:</strong> CinXphere is an indexing platform it doesn't distribute,
+            upload, stream, stores, or host any copyrighted movies, web series, TV shows, or other contents of media on
+            its server. Our platform is designed solely to help users discover content by organizing links that is
+            already publicly available on third-party websites. All linked contents is controlled, managed, and owned by
+            the respective third-party providers.
+        </p>
+
+        <p class="copyright">&copy; 2026 CinXphere. All Rights Reserved.</p>
+    </footer>
+
+    <script type="module" src="firebase-auth.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
