@@ -1,5 +1,16 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut,
+    updateProfile,
+    GoogleAuthProvider,
+    signInWithPopup,
+    RecaptchaVerifier,
+    signInWithPhoneNumber
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
 
 const firebaseConfig = {
@@ -15,6 +26,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const analytics = getAnalytics(app);
+const googleProvider = new GoogleAuthProvider();
 
 // DOM Elements
 const loginNavBtn = document.getElementById('loginNavBtn');
@@ -22,10 +34,25 @@ const authModal = document.getElementById('authModal');
 const authCloseBtn = document.getElementById('authCloseBtn');
 const tabLogin = document.getElementById('tabLogin');
 const tabSignup = document.getElementById('tabSignup');
+const tabPhone = document.getElementById('tabPhone');
 const panelLogin = document.getElementById('panelLogin');
 const panelSignup = document.getElementById('panelSignup');
+const panelPhone = document.getElementById('panelPhone');
 const goToSignup = document.getElementById('goToSignup');
 const goToLogin = document.getElementById('goToLogin');
+
+const googleLoginBtn = document.getElementById('googleLoginBtn');
+const googleSignupBtn = document.getElementById('googleSignupBtn');
+
+const phoneNumberForm = document.getElementById('phoneNumberForm');
+const otpForm = document.getElementById('otpForm');
+const phoneNumberInput = document.getElementById('phoneNumberInput');
+const otpInput = document.getElementById('otpInput');
+const phoneError = document.getElementById('phoneError');
+const otpError = document.getElementById('otpError');
+const sendOtpBtn = document.getElementById('sendOtpBtn');
+const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+const changePhoneNumber = document.getElementById('changePhoneNumber');
 
 const loginEmail = document.getElementById('loginEmail');
 const loginPassword = document.getElementById('loginPassword');
@@ -68,21 +95,36 @@ authModal.addEventListener('click', (e) => {
 function showLogin() {
     tabLogin.classList.add('active');
     tabSignup.classList.remove('active');
+    tabPhone.classList.remove('active');
     panelLogin.style.display = 'block';
     panelSignup.style.display = 'none';
+    panelPhone.style.display = 'none';
 }
 
 function showSignup() {
     tabSignup.classList.add('active');
     tabLogin.classList.remove('active');
+    tabPhone.classList.remove('active');
     panelSignup.style.display = 'block';
     panelLogin.style.display = 'none';
+    panelPhone.style.display = 'none';
+}
+
+function showPhone() {
+    tabPhone.classList.add('active');
+    tabLogin.classList.remove('active');
+    tabSignup.classList.remove('active');
+    panelPhone.style.display = 'block';
+    panelLogin.style.display = 'none';
+    panelSignup.style.display = 'none';
+    resetPhoneForm();
 }
 
 tabLogin.addEventListener('click', showLogin);
 goToLogin.addEventListener('click', (e) => { e.preventDefault(); showLogin(); });
 tabSignup.addEventListener('click', showSignup);
 goToSignup.addEventListener('click', (e) => { e.preventDefault(); showSignup(); });
+tabPhone.addEventListener('click', showPhone);
 
 // Password toggles
 document.querySelectorAll('.toggle-pw').forEach(btn => {
@@ -166,6 +208,118 @@ loginSubmitBtn.addEventListener('click', async (e) => {
     }
 });
 
+// Google Sign-In
+async function handleGoogleSignIn(triggerBtn) {
+    const originalText = triggerBtn.innerHTML;
+    triggerBtn.disabled = true;
+    triggerBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Connecting...';
+
+    try {
+        await signInWithPopup(auth, googleProvider);
+        closeAuthModal();
+    } catch (error) {
+        const message = error.code === 'auth/popup-closed-by-user'
+            ? ''
+            : error.message.replace('Firebase: ', '');
+        if (loginError) loginError.innerText = message;
+        if (signupError) signupError.innerText = message;
+    } finally {
+        triggerBtn.disabled = false;
+        triggerBtn.innerHTML = originalText;
+    }
+}
+
+googleLoginBtn.addEventListener('click', () => handleGoogleSignIn(googleLoginBtn));
+googleSignupBtn.addEventListener('click', () => handleGoogleSignIn(googleSignupBtn));
+
+// Phone Number Sign-In (OTP)
+let confirmationResult = null;
+let recaptchaVerifier = null;
+
+function getRecaptchaVerifier() {
+    if (!recaptchaVerifier) {
+        recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptchaContainer', {
+            size: 'invisible'
+        });
+    }
+    return recaptchaVerifier;
+}
+
+function resetPhoneForm() {
+    phoneError.innerText = '';
+    otpError.innerText = '';
+    otpInput.value = '';
+    phoneNumberForm.style.display = 'block';
+    otpForm.style.display = 'none';
+}
+
+sendOtpBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    phoneError.innerText = '';
+    const phoneNumber = phoneNumberInput.value.trim();
+
+    if (!phoneNumber.startsWith('+')) {
+        phoneError.innerText = 'Enter your number with a country code, e.g. +91XXXXXXXXXX.';
+        return;
+    }
+
+    const originalText = sendOtpBtn.innerHTML;
+    sendOtpBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Sending...';
+    sendOtpBtn.disabled = true;
+
+    try {
+        const verifier = getRecaptchaVerifier();
+        confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, verifier);
+        phoneNumberForm.style.display = 'none';
+        otpForm.style.display = 'block';
+    } catch (error) {
+        phoneError.innerText = error.message.replace('Firebase: ', '');
+        if (recaptchaVerifier) {
+            recaptchaVerifier.clear();
+            recaptchaVerifier = null;
+        }
+    } finally {
+        sendOtpBtn.innerHTML = originalText;
+        sendOtpBtn.disabled = false;
+    }
+});
+
+verifyOtpBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    otpError.innerText = '';
+    const code = otpInput.value.trim();
+
+    if (!code) {
+        otpError.innerText = 'Enter the code we sent you.';
+        return;
+    }
+    if (!confirmationResult) {
+        otpError.innerText = 'Please request a new code.';
+        return;
+    }
+
+    const originalText = verifyOtpBtn.innerHTML;
+    verifyOtpBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verifying...';
+    verifyOtpBtn.disabled = true;
+
+    try {
+        await confirmationResult.confirm(code);
+        closeAuthModal();
+        resetPhoneForm();
+        phoneNumberInput.value = '';
+    } catch (error) {
+        otpError.innerText = 'Invalid or expired code. Please try again.';
+    } finally {
+        verifyOtpBtn.innerHTML = originalText;
+        verifyOtpBtn.disabled = false;
+    }
+});
+
+changePhoneNumber.addEventListener('click', (e) => {
+    e.preventDefault();
+    resetPhoneForm();
+});
+
 dropdownSignOut.addEventListener('click', () => {
     signOut(auth);
 });
@@ -174,8 +328,9 @@ onAuthStateChanged(auth, (user) => {
     if (user) {
         loginNavBtn.style.display = 'none';
         userAvatarMenu.style.display = 'block';
-        userAvatarCircle.innerText = user.email.charAt(0).toUpperCase();
-        avatarDropdownEmail.innerText = user.email;
+        const initialSource = user.displayName || user.email || user.phoneNumber || 'U';
+        userAvatarCircle.innerText = initialSource.charAt(0).toUpperCase();
+        avatarDropdownEmail.innerText = user.email || user.phoneNumber || '';
         avatarDropdownName.innerText = user.displayName || 'User';
     } else {
         loginNavBtn.style.display = 'flex';
