@@ -73,36 +73,20 @@ const avatarDropdownEmail = document.getElementById('avatarDropdownEmail');
 const dropdownSignOut = document.getElementById('dropdownSignOut');
 
 // Modal logic
-function openAuthModal(tab = 'login') {
-    authModal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-    if (tab === 'login') {
-        showLogin();
-    } else if (tab === 'signup') {
-        showSignup();
-    } else {
-        showPhone();
-    }
+function openAuthModal() {
+    authModal.style.display = 'flex';
 }
 
 function closeAuthModal() {
-    authModal.classList.remove('active');
-    document.body.style.overflow = '';
+    authModal.style.display = 'none';
 }
 
-loginNavBtn.addEventListener('click', () => openAuthModal('login'));
+loginNavBtn.addEventListener('click', openAuthModal);
 authCloseBtn.addEventListener('click', closeAuthModal);
 
 // Close modal when clicking outside
 authModal.addEventListener('click', (e) => {
     if (e.target === authModal) {
-        closeAuthModal();
-    }
-});
-
-// ESC key closes modal
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && authModal.classList.contains('active')) {
         closeAuthModal();
     }
 });
@@ -351,33 +335,22 @@ onAuthStateChanged(auth, (user) => {
     } else {
         loginNavBtn.style.display = 'flex';
         userAvatarMenu.style.display = 'none';
-        userAvatarMenu.classList.remove('open');
+        const dropdown = document.getElementById('avatarDropdown');
+        if (dropdown) dropdown.style.display = 'none';
     }
 });
 
-// Dropdown "My Watchlist" shortcut
-const dropdownMyList = document.getElementById('dropdownMyList');
-if (dropdownMyList) {
-    dropdownMyList.addEventListener('click', () => {
-        userAvatarMenu.classList.remove('open');
-        const navMyList = document.getElementById('navMyList');
-        if (navMyList) navMyList.click();
-    });
-}
-
-// User menu dropdown toggle using premium CSS transitions
+// User menu dropdown toggle
 userAvatarCircle.addEventListener('click', (e) => {
     e.stopPropagation();
-    userAvatarMenu.classList.toggle('open');
+    const dropdown = document.getElementById('avatarDropdown');
+    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
 });
 
 // Close dropdown when clicking outside
 document.addEventListener('click', (e) => {
-    if (userAvatarMenu.classList.contains('open') && !userAvatarMenu.contains(e.target)) {
-        userAvatarMenu.classList.remove('open');
+    const dropdown = document.getElementById('avatarDropdown');
+    if (dropdown && dropdown.style.display === 'block' && !userAvatarMenu.contains(e.target)) {
+        dropdown.style.display = 'none';
     }
 });
-
-// Expose auth utilities globally
-window.openAuthModal = openAuthModal;
-window.isLoggedIn = () => !!auth.currentUser;
