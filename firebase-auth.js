@@ -14,13 +14,13 @@ import {
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBBD7mQKRaqjq8QUBY_gyn3VspU52AR7m0",
-  authDomain: "cinxphere.firebaseapp.com",
-  projectId: "cinxphere",
-  storageBucket: "cinxphere.firebasestorage.app",
-  messagingSenderId: "498914398474",
-  appId: "1:498914398474:web:c668437f7d3330dbf72af3",
-  measurementId: "G-WTD1Q2S0CL"
+    apiKey: "AIzaSyBBD7mQKRaqjq8QUBY_gyn3VspU52AR7m0",
+    authDomain: "cinxphere.firebaseapp.com",
+    projectId: "cinxphere",
+    storageBucket: "cinxphere.firebasestorage.app",
+    messagingSenderId: "498914398474",
+    appId: "1:498914398474:web:c668437f7d3330dbf72af3",
+    measurementId: "G-WTD1Q2S0CL"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -153,7 +153,7 @@ signupSubmitBtn.addEventListener('click', async (e) => {
     const email = signupEmail.value;
     const password = signupPassword.value;
     const confirmPassword = signupConfirmPassword.value;
-    
+
     if (password !== confirmPassword) {
         signupError.innerText = 'Passwords do not match.';
         return;
@@ -162,7 +162,7 @@ signupSubmitBtn.addEventListener('click', async (e) => {
         signupError.innerText = 'Please enter your name.';
         return;
     }
-    
+
     const originalText = signupSubmitBtn.innerHTML;
     signupSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Loading...';
     signupSubmitBtn.disabled = true;
@@ -190,7 +190,7 @@ loginSubmitBtn.addEventListener('click', async (e) => {
     loginError.innerText = '';
     const email = loginEmail.value;
     const password = loginPassword.value;
-    
+
     const originalText = loginSubmitBtn.innerHTML;
     loginSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Loading...';
     loginSubmitBtn.disabled = true;
