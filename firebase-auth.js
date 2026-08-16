@@ -11,7 +11,7 @@ import {
     signInWithRedirect,
     getRedirectResult
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+
 import {
     getFirestore,
     doc,
@@ -35,13 +35,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const analytics = getAnalytics(app);
+
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
 // Expose Firebase services globally for script.js
 window.auth = auth;
 window.db = db;
+
 
 // ─── Sync user profile to Firestore ───────────────────────────────────────────
 async function syncUserProfile(user) {
