@@ -7,7 +7,9 @@ import {
     signOut,
     updateProfile,
     GoogleAuthProvider,
-    signInWithPopup
+    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
 import {
@@ -273,16 +275,44 @@ async function handleGoogleSignIn(triggerBtn) {
         await signInWithPopup(auth, googleProvider);
         closeAuthModal();
     } catch (error) {
-        const message = error.code === 'auth/popup-closed-by-user'
-            ? ''
-            : error.message.replace('Firebase: ', '');
-        if (loginError) loginError.innerText = message;
-        if (signupError) signupError.innerText = message;
+        console.error('Google sign-in error:', error.code, error.message);
+        if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+            // User closed popup — do nothing
+        } else if (
+            error.code === 'auth/popup-blocked' ||
+            error.code === 'auth/operation-not-supported-in-this-environment'
+        ) {
+            // Popup was blocked — fall back to redirect
+            try {
+                await signInWithRedirect(auth, googleProvider);
+            } catch (redirectError) {
+                const msg = redirectError.message.replace('Firebase: ', '');
+                if (loginError) loginError.innerText = msg;
+                if (signupError) signupError.innerText = msg;
+            }
+        } else if (error.code === 'auth/unauthorized-domain') {
+            const msg = 'This domain is not authorized. Please add it to Firebase Console → Authentication → Settings → Authorized Domains.';
+            if (loginError) loginError.innerText = msg;
+            if (signupError) signupError.innerText = msg;
+        } else {
+            const msg = error.message.replace('Firebase: ', '');
+            if (loginError) loginError.innerText = msg;
+            if (signupError) signupError.innerText = msg;
+        }
     } finally {
         triggerBtn.disabled = false;
         triggerBtn.innerHTML = originalText;
     }
 }
+
+// Handle redirect result on page load (for fallback redirect flow)
+getRedirectResult(auth).then((result) => {
+    if (result && result.user) {
+        closeAuthModal();
+    }
+}).catch((error) => {
+    console.error('Redirect result error:', error.code, error.message);
+});
 
 googleLoginBtn.addEventListener('click', () => handleGoogleSignIn(googleLoginBtn));
 googleSignupBtn.addEventListener('click', () => handleGoogleSignIn(googleSignupBtn));
