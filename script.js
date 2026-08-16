@@ -641,14 +641,47 @@ async function triggerTrailerInterface(movieId, mediaType = "movie") {
 }
 
 function triggerStreamInterface(movieId, mediaType = "movie", season = 1, episode = 1) {
+    const overrides = JSON.parse(localStorage.getItem("cinxphere_overrides") || "[]");
+    const activeProvider = localStorage.getItem("cinxphere_provider") || "nxsha.space";
+    const customTemplate = localStorage.getItem("cinxphere_custom_template") || "";
+
+    // Search for a matching override for this TMDB ID and type
+    const match = overrides.find(o =>
+        o.tmdbId === String(movieId) &&
+        o.mediaType === mediaType &&
+        (mediaType === "movie" || (o.season === String(season) && o.episode === String(episode)))
+    );
+
     let targetEmbedUrl;
-    if (mediaType === "movie") {
-        targetEmbedUrl = `https://nxsha.space/embed/movie/${movieId}`;
+    if (match) {
+        // Use custom override source
+        targetEmbedUrl = match.url;
     } else {
-        targetEmbedUrl = `https://nxsha.space/embed/tv/${movieId}/${season}/${episode}`;
+        // Use default settings engine
+        if (activeProvider === "custom" && customTemplate) {
+            targetEmbedUrl = customTemplate
+                .replace("{type}", mediaType)
+                .replace("{id}", movieId)
+                .replace("{season}", season)
+                .replace("{episode}", episode);
+        } else {
+            const domain = activeProvider;
+            if (mediaType === "movie") {
+                targetEmbedUrl = `https://${domain}/embed/movie/${movieId}`;
+            } else {
+                targetEmbedUrl = `https://${domain}/embed/tv/${movieId}/${season}/${episode}`;
+            }
+        }
     }
+
     const title = detailTitle.textContent || "";
     const subtitle = mediaType === "tv" ? `Season ${season} • Episode ${episode}` : "Full Movie";
+    
+    // Log playback event to Firebase Firestore for admin dashboard charts
+    if (window.logPlaybackEventToFirestore) {
+        window.logPlaybackEventToFirestore(movieId, mediaType, title);
+    }
+    
     openPlayerModal(targetEmbedUrl, title, subtitle);
 }
 
@@ -696,6 +729,11 @@ function toggleBookmark(movie, mediaType = "movie") {
         myList.splice(index, 1);
     }
     localStorage.setItem("cinxphere_mylist", JSON.stringify(myList));
+    
+    // Sync watchlist to Firebase Firestore for admin view
+    if (window.syncWatchlistToFirestore) {
+        window.syncWatchlistToFirestore(myList);
+    }
 
     const modalSaveBtn = document.getElementById("detailSaveBtn");
     if (modalSaveBtn) {
@@ -1181,4 +1219,14 @@ init();
     // ── Expose helpers globally for the rest of the app ──────
     window.openAuthModal = openAuthModal;
     window.isLoggedIn = () => !!getSession();
+    window.loadMyListFromLocalStorage = function() {
+        try {
+            myList = JSON.parse(localStorage.getItem("cinxphere_mylist")) || [];
+        } catch (e) {
+            myList = [];
+        }
+        if (activeTab === "mylist") {
+            viewMyList();
+        }
+    };
 })();

@@ -12,6 +12,16 @@ import {
     signInWithPhoneNumber
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+import {
+    getFirestore,
+    doc,
+    setDoc,
+    getDoc,
+    updateDoc,
+    addDoc,
+    collection,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBBD7mQKRaqjq8QUBY_gyn3VspU52AR7m0",
@@ -26,7 +36,81 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const analytics = getAnalytics(app);
+const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
+
+// Expose Firebase services and functions globally for script.js
+window.auth = auth;
+window.db = db;
+
+// Sync user profile helper
+async function syncUserProfile(user) {
+    if (!user) return;
+    const userDocRef = doc(db, "users", user.uid);
+    try {
+        const docSnap = await getDoc(userDocRef);
+        if (!docSnap.exists()) {
+            await setDoc(userDocRef, {
+                uid: user.uid,
+                email: user.email || user.phoneNumber || "anonymous",
+                displayName: user.displayName || "CinXphere User",
+                provider: user.providerData && user.providerData[0] ? user.providerData[0].providerId : "email",
+                status: "active",
+                createdAt: serverTimestamp(),
+                lastLogin: serverTimestamp(),
+                watchlistSize: 0,
+                watchlist: []
+            });
+        } else {
+            const userData = docSnap.data();
+            if (userData.status === "blocked") {
+                await signOut(auth);
+                alert("Your account has been blocked by the administrator.");
+                window.location.reload();
+                return;
+            }
+            await updateDoc(userDocRef, {
+                lastLogin: serverTimestamp(),
+                displayName: user.displayName || userData.displayName || "CinXphere User",
+                email: user.email || user.phoneNumber || userData.email || "anonymous"
+            });
+        }
+    } catch (error) {
+        console.error("Error syncing user profile:", error);
+    }
+}
+
+// Watchlist syncing to Firestore
+window.syncWatchlistToFirestore = async function(watchlist) {
+    const user = auth.currentUser;
+    if (!user) return;
+    const userDocRef = doc(db, "users", user.uid);
+    try {
+        await updateDoc(userDocRef, {
+            watchlistSize: watchlist.length,
+            watchlist: watchlist
+        });
+    } catch (error) {
+        console.error("Error updating watchlist in Firestore:", error);
+    }
+};
+
+// Playback analytics logging to Firestore
+window.logPlaybackEventToFirestore = async function(movieId, mediaType, title) {
+    const user = auth.currentUser;
+    try {
+        await addDoc(collection(db, "playback_events"), {
+            movieId: String(movieId),
+            mediaType: mediaType,
+            title: title,
+            timestamp: serverTimestamp(),
+            uid: user ? user.uid : "guest",
+            userEmail: user ? (user.email || user.phoneNumber || "anonymous") : "guest"
+        });
+    } catch (error) {
+        console.error("Error logging playback event to Firestore:", error);
+    }
+};
 
 // DOM Elements
 const loginNavBtn = document.getElementById('loginNavBtn');
@@ -324,8 +408,18 @@ dropdownSignOut.addEventListener('click', () => {
     signOut(auth);
 });
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     if (user) {
+        // Sync profile & block check
+        await syncUserProfile(user);
+        
+        // Sync to local session key expected by script.js
+        localStorage.setItem('cinxphere_session', JSON.stringify({
+            id: user.uid,
+            name: user.displayName || user.email || user.phoneNumber || "CinXphere User",
+            email: user.email || user.phoneNumber || ""
+        }));
+        
         loginNavBtn.style.display = 'none';
         userAvatarMenu.style.display = 'block';
         const initialSource = user.displayName || user.email || user.phoneNumber || 'U';
@@ -333,6 +427,9 @@ onAuthStateChanged(auth, (user) => {
         avatarDropdownEmail.innerText = user.email || user.phoneNumber || '';
         avatarDropdownName.innerText = user.displayName || 'User';
     } else {
+        // Clear local session key on logout
+        localStorage.removeItem('cinxphere_session');
+        
         loginNavBtn.style.display = 'flex';
         userAvatarMenu.style.display = 'none';
         const dropdown = document.getElementById('avatarDropdown');
