@@ -120,28 +120,10 @@ async function handleGoogleSignIn(triggerBtn) {
     triggerBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Connecting...';
 
     try {
-        await signInWithPopup(auth, googleProvider);
-        closeAuthModal();
-    } catch (error) {
-        console.error('Google sign-in error:', error.code, error.message);
-
-        if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-            // user dismissed — do nothing
-        } else if (
-            error.code === 'auth/popup-blocked' ||
-            error.code === 'auth/operation-not-supported-in-this-environment'
-        ) {
-            // popup blocked — fall back to redirect
-            try {
-                await signInWithRedirect(auth, googleProvider);
-            } catch (redirectError) {
-                showAuthError(redirectError.message.replace('Firebase: ', ''));
-            }
-        } else if (error.code === 'auth/unauthorized-domain') {
-            showAuthError('This domain is not authorized for Google sign-in. Go to Firebase Console → Authentication → Settings → Authorized Domains and add your domain.');
-        } else {
-            showAuthError(error.message.replace('Firebase: ', ''));
-        }
+        await signInWithRedirect(auth, googleProvider);
+    } catch (redirectError) {
+        console.error('Google sign-in redirect error:', redirectError);
+        showAuthError(redirectError.message.replace('Firebase: ', ''));
     } finally {
         triggerBtn.disabled = false;
         triggerBtn.innerHTML = originalText;
