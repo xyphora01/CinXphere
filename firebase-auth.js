@@ -139,12 +139,54 @@ function showAuthError(msg) {
 
 function closeAuthModal() {
     const authModal = document.getElementById('authModal');
-    if (authModal) authModal.style.display = 'none';
+    if (authModal) {
+        authModal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
 }
 
-function openAuthModal() {
+function openAuthModal(tab = 'login') {
     const authModal = document.getElementById('authModal');
-    if (authModal) authModal.style.display = 'flex';
+    if (authModal) {
+        authModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        if (tab === 'login') {
+            showLogin();
+        } else {
+            showSignup();
+        }
+    }
+}
+
+function showLogin() {
+    const tabLogin = document.getElementById('tabLogin');
+    const tabSignup = document.getElementById('tabSignup');
+    const panelLogin = document.getElementById('panelLogin');
+    const panelSignup = document.getElementById('panelSignup');
+    if (tabLogin) tabLogin.classList.add('active');
+    if (tabSignup) tabSignup.classList.remove('active');
+    if (panelLogin) panelLogin.style.display = 'block';
+    if (panelSignup) panelSignup.style.display = 'none';
+    clearErrors();
+}
+
+function showSignup() {
+    const tabLogin = document.getElementById('tabLogin');
+    const tabSignup = document.getElementById('tabSignup');
+    const panelLogin = document.getElementById('panelLogin');
+    const panelSignup = document.getElementById('panelSignup');
+    if (tabSignup) tabSignup.classList.add('active');
+    if (tabLogin) tabLogin.classList.remove('active');
+    if (panelSignup) panelSignup.style.display = 'block';
+    if (panelLogin) panelLogin.style.display = 'none';
+    clearErrors();
+}
+
+function clearErrors() {
+    const loginError = document.getElementById('loginError');
+    const signupError = document.getElementById('signupError');
+    if (loginError) loginError.innerText = '';
+    if (signupError) signupError.innerText = '';
 }
 
 // ─── Handle redirect result on page load ──────────────────────────────────────
@@ -183,6 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const avatarDropdownName = document.getElementById('avatarDropdownName');
         const avatarDropdownEmail = document.getElementById('avatarDropdownEmail');
         const dropdownSignOut = document.getElementById('dropdownSignOut');
+        const dropdownMyList = document.getElementById('dropdownMyList');
 
         // ── Modal open/close ──
         if (loginNavBtn) loginNavBtn.addEventListener('click', openAuthModal);
@@ -193,20 +236,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // ── Tab switching ──
-        function showLogin() {
-            if (tabLogin) tabLogin.classList.add('active');
-            if (tabSignup) tabSignup.classList.remove('active');
-            if (panelLogin) panelLogin.style.display = 'block';
-            if (panelSignup) panelSignup.style.display = 'none';
-        }
+        // ── Tab switching handled globally ──
 
-        function showSignup() {
-            if (tabSignup) tabSignup.classList.add('active');
-            if (tabLogin) tabLogin.classList.remove('active');
-            if (panelSignup) panelSignup.style.display = 'block';
-            if (panelLogin) panelLogin.style.display = 'none';
-        }
 
         if (tabLogin) tabLogin.addEventListener('click', showLogin);
         if (goToLogin) goToLogin.addEventListener('click', (e) => { e.preventDefault(); showLogin(); });
@@ -306,9 +337,43 @@ document.addEventListener('DOMContentLoaded', () => {
             dropdownSignOut.addEventListener('click', () => signOut(auth));
         }
 
+        // ── Dropdown My Watchlist shortcut ──
+        if (dropdownMyList) {
+            dropdownMyList.addEventListener('click', () => {
+                if (userAvatarMenu) userAvatarMenu.classList.remove('open');
+                const navMyList = document.getElementById('navMyList');
+                if (navMyList) navMyList.click();
+            });
+        }
+
         // ── Auth state observer ──
         onAuthStateChanged(auth, async (user) => {
             if (user) {
+                // Fetch watchlist first
+                let docSnap;
+                try {
+                    const userDocRef = doc(db, "users", user.uid);
+                    docSnap = await getDoc(userDocRef);
+                } catch (dbErr) {
+                    console.error("Error fetching user data from Firestore on login:", dbErr);
+                }
+
+                if (docSnap && docSnap.exists()) {
+                    const userData = docSnap.data();
+                    if (userData.status === "blocked") {
+                        await signOut(auth);
+                        alert("Your account has been blocked by the administrator.");
+                        window.location.reload();
+                        return;
+                    }
+                    if (userData.watchlist) {
+                        localStorage.setItem('cinxphere_mylist', JSON.stringify(userData.watchlist));
+                        if (window.loadMyListFromLocalStorage) {
+                            window.loadMyListFromLocalStorage();
+                        }
+                    }
+                }
+
                 await syncUserProfile(user);
                 localStorage.setItem('cinxphere_session', JSON.stringify({
                     id: user.uid,
@@ -317,34 +382,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 }));
 
                 if (loginNavBtn) loginNavBtn.style.display = 'none';
-                if (userAvatarMenu) userAvatarMenu.style.display = 'block';
+                if (userAvatarMenu) userAvatarMenu.style.display = 'flex';
                 const initialSource = user.displayName || user.email || 'U';
                 if (userAvatarCircle) userAvatarCircle.innerText = initialSource.charAt(0).toUpperCase();
                 if (avatarDropdownEmail) avatarDropdownEmail.innerText = user.email || '';
                 if (avatarDropdownName) avatarDropdownName.innerText = user.displayName || 'User';
             } else {
                 localStorage.removeItem('cinxphere_session');
+                localStorage.removeItem('cinxphere_mylist');
+                if (window.loadMyListFromLocalStorage) {
+                    window.loadMyListFromLocalStorage();
+                }
+
                 if (loginNavBtn) loginNavBtn.style.display = 'flex';
-                if (userAvatarMenu) userAvatarMenu.style.display = 'none';
-                const dropdown = document.getElementById('avatarDropdown');
-                if (dropdown) dropdown.style.display = 'none';
+                if (userAvatarMenu) {
+                    userAvatarMenu.style.display = 'none';
+                    userAvatarMenu.classList.remove('open');
+                }
             }
         });
 
         // ── Avatar dropdown toggle ──
-        if (userAvatarCircle) {
+        if (userAvatarCircle && userAvatarMenu) {
             userAvatarCircle.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const dropdown = document.getElementById('avatarDropdown');
-                if (dropdown) dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+                userAvatarMenu.classList.toggle('open');
             });
         }
 
         // ── Close dropdown on outside click ──
         document.addEventListener('click', (e) => {
-            const dropdown = document.getElementById('avatarDropdown');
-            if (dropdown && dropdown.style.display === 'block' && userAvatarMenu && !userAvatarMenu.contains(e.target)) {
-                dropdown.style.display = 'none';
+            if (userAvatarMenu && userAvatarMenu.classList.contains('open') && !userAvatarMenu.contains(e.target)) {
+                userAvatarMenu.classList.remove('open');
             }
         });
 
