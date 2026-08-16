@@ -368,4 +368,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
         console.error('CinXphere Auth setup error:', err);
     }
+    // Expose utility functions globally
+    window.isLoggedIn = () => !!auth.currentUser;
+    window.openAuthModal = openAuthModal;
+    window.closeAuthModal = closeAuthModal;
 });
