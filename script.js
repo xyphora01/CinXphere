@@ -947,286 +947,37 @@ function setupChangeFeaturedBtn() {
 cacheMovies(myList);
 init();
 
+
 // ==========================================
-// AUTH SYSTEM (localStorage-based)
+// AUTH BRIDGE (helpers used by this file)
 // ==========================================
+// NOTE: All auth UI, event listeners, modal logic, and Firebase handling
+// are managed exclusively by firebase-auth.js. This section only exposes
+// the global helpers that the rest of script.js depends on.
 
-(function initAuthSystem() {
-    // ── DOM refs ──────────────────────────────────────────────
-    const authModal = document.getElementById('authModal');
-    const authCloseBtn = document.getElementById('authCloseBtn');
-    const loginNavBtn = document.getElementById('loginNavBtn');
-    const userAvatarMenu = document.getElementById('userAvatarMenu');
-    const userAvatarCircle = document.getElementById('userAvatarCircle');
-    const avatarDropdown = document.getElementById('avatarDropdown');
-    const avatarDropdownIcon = document.getElementById('avatarDropdownIcon');
-    const avatarDropdownName = document.getElementById('avatarDropdownName');
-    const avatarDropdownEmail = document.getElementById('avatarDropdownEmail');
-    const dropdownMyList = document.getElementById('dropdownMyList');
-    const dropdownSignOut = document.getElementById('dropdownSignOut');
-
-    const tabLogin = document.getElementById('tabLogin');
-    const tabSignup = document.getElementById('tabSignup');
-    const panelLogin = document.getElementById('panelLogin');
-    const panelSignup = document.getElementById('panelSignup');
-
-    const loginEmail = document.getElementById('loginEmail');
-    const loginPassword = document.getElementById('loginPassword');
-    const loginError = document.getElementById('loginError');
-    const loginSubmitBtn = document.getElementById('loginSubmitBtn');
-
-    const signupName = document.getElementById('signupName');
-    const signupEmail = document.getElementById('signupEmail');
-    const signupPassword = document.getElementById('signupPassword');
-    const signupConfirmPassword = document.getElementById('signupConfirmPassword');
-    const signupError = document.getElementById('signupError');
-    const signupSubmitBtn = document.getElementById('signupSubmitBtn');
-
-    const goToSignup = document.getElementById('goToSignup');
-    const goToLogin = document.getElementById('goToLogin');
-
-    // ── Helper: get initials (up to 2 chars) ─────────────────
-    function getInitials(name) {
-        if (!name) return '?';
-        return name.trim().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+window.isLoggedIn = function () {
+    try {
+        return !!JSON.parse(localStorage.getItem('cinxphere_session'));
+    } catch (e) {
+        return false;
     }
+};
 
-    // ── Helper: load users registry ──────────────────────────
-    function getUsers() {
-        try { return JSON.parse(localStorage.getItem('cinxphere_users') || '[]'); } catch (e) { return []; }
-    }
-
-    function saveUsers(users) {
-        localStorage.setItem('cinxphere_users', JSON.stringify(users));
-    }
-
-    // ── Helper: current session ───────────────────────────────
-    function getSession() {
-        try { return JSON.parse(localStorage.getItem('cinxphere_session') || 'null'); } catch (e) { return null; }
-    }
-
-    function saveSession(user) {
-        localStorage.setItem('cinxphere_session', JSON.stringify(user));
-    }
-
-    function clearSession() {
-        localStorage.removeItem('cinxphere_session');
-    }
-
-    // ── Modal open / close ────────────────────────────────────
-    function openAuthModal(tab = 'login') {
-        authModal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        switchTab(tab);
-        clearErrors();
-    }
-
-    function closeAuthModal() {
-        authModal.classList.remove('active');
-        document.body.style.overflow = '';
-    }
-
-    // ── Tab switching ─────────────────────────────────────────
-    function switchTab(tab) {
-        if (tab === 'login') {
-            panelLogin.style.display = 'block';
-            panelSignup.style.display = 'none';
-            tabLogin.classList.add('active');
-            tabSignup.classList.remove('active');
-        } else {
-            panelLogin.style.display = 'none';
-            panelSignup.style.display = 'block';
-            tabLogin.classList.remove('active');
-            tabSignup.classList.add('active');
-        }
-        clearErrors();
-    }
-
-    function clearErrors() {
-        loginError.textContent = '';
-        signupError.textContent = '';
-    }
-
-    // ── Update navbar UI based on session ────────────────────
-    function refreshNavUI() {
-        const user = getSession();
-        if (user) {
-            loginNavBtn.style.display = 'none';
-            userAvatarMenu.style.display = 'flex';
-            const initials = getInitials(user.name);
-            userAvatarCircle.textContent = initials;
-            avatarDropdownIcon.textContent = initials;
-            avatarDropdownName.textContent = user.name;
-            avatarDropdownEmail.textContent = user.email;
-        } else {
-            loginNavBtn.style.display = 'flex';
-            userAvatarMenu.style.display = 'none';
-        }
-    }
-
-    // ── Sign In logic ─────────────────────────────────────────
-    loginSubmitBtn.addEventListener('click', () => {
-        const email = loginEmail.value.trim().toLowerCase();
-        const pw = loginPassword.value;
-
-        if (!email || !pw) {
-            loginError.textContent = 'Please fill in all fields.';
-            return;
-        }
-
-        const users = getUsers();
-        const match = users.find(u => u.email === email && u.password === pw);
-
-        if (!match) {
-            loginError.textContent = 'Incorrect email or password.';
-            return;
-        }
-
-        saveSession(match);
-        refreshNavUI();
-        closeAuthModal();
-        loginEmail.value = '';
-        loginPassword.value = '';
-    });
-
-    // ── Sign Up logic ─────────────────────────────────────────
-    signupSubmitBtn.addEventListener('click', () => {
-        const name = signupName.value.trim();
-        const email = signupEmail.value.trim().toLowerCase();
-        const pw = signupPassword.value;
-        const pwConf = signupConfirmPassword.value;
-
-        if (!name || !email || !pw || !pwConf) {
-            signupError.textContent = 'Please fill in all fields.';
-            return;
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            signupError.textContent = 'Please enter a valid email address.';
-            return;
-        }
-
-        if (pw.length < 6) {
-            signupError.textContent = 'Password must be at least 6 characters.';
-            return;
-        }
-
-        if (pw !== pwConf) {
-            signupError.textContent = 'Passwords do not match.';
-            return;
-        }
-
-        const users = getUsers();
-        if (users.find(u => u.email === email)) {
-            signupError.textContent = 'An account with this email already exists.';
-            return;
-        }
-
-        const newUser = { name, email, password: pw };
-        users.push(newUser);
-        saveUsers(users);
-        saveSession(newUser);
-        refreshNavUI();
-        closeAuthModal();
-
-        // Reset form
-        signupName.value = signupEmail.value = signupPassword.value = signupConfirmPassword.value = '';
-    });
-
-    // ── Sign Out ──────────────────────────────────────────────
-    dropdownSignOut.addEventListener('click', () => {
-        clearSession();
-        refreshNavUI();
-        userAvatarMenu.classList.remove('open');
-    });
-
-    // ── Dropdown "My Watchlist" shortcut ──────────────────────
-    dropdownMyList.addEventListener('click', () => {
-        userAvatarMenu.classList.remove('open');
-        // Reuse existing watchlist logic
-        const navMyList = document.getElementById('navMyList');
-        if (navMyList) navMyList.click();
-    });
-
-    // ── Avatar circle toggle dropdown ─────────────────────────
-    userAvatarCircle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        userAvatarMenu.classList.toggle('open');
-    });
-
-    // ── Close dropdown on outside click ──────────────────────
-    document.addEventListener('click', (e) => {
-        if (!userAvatarMenu.contains(e.target)) {
-            userAvatarMenu.classList.remove('open');
-        }
-    });
-
-    // ── Open modal on "Sign In" button ────────────────────────
-    loginNavBtn.addEventListener('click', () => openAuthModal('login'));
-
-    // ── Close modal: button & overlay click ──────────────────
-    authCloseBtn.addEventListener('click', closeAuthModal);
-    authModal.addEventListener('click', (e) => {
-        if (e.target === authModal) closeAuthModal();
-    });
-
-    // ── ESC key closes modal ──────────────────────────────────
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && authModal.classList.contains('active')) {
-            closeAuthModal();
-        }
-    });
-
-    // ── Tab switcher clicks ───────────────────────────────────
-    tabLogin.addEventListener('click', () => switchTab('login'));
-    tabSignup.addEventListener('click', () => switchTab('signup'));
-    goToSignup.addEventListener('click', (e) => { e.preventDefault(); switchTab('signup'); });
-    goToLogin.addEventListener('click', (e) => { e.preventDefault(); switchTab('login'); });
-
-    // ── Password visibility toggles ───────────────────────────
-    document.querySelectorAll('.toggle-pw').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const targetId = btn.getAttribute('data-target');
-            const input = document.getElementById(targetId);
-            const icon = btn.querySelector('i');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.replace('fa-eye', 'fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.replace('fa-eye-slash', 'fa-eye');
-            }
-        });
-    });
-
-    // ── Allow Enter key to submit forms ──────────────────────
-    [loginEmail, loginPassword].forEach(el => {
-        el.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') loginSubmitBtn.click();
-        });
-    });
-
-    [signupName, signupEmail, signupPassword, signupConfirmPassword].forEach(el => {
-        el.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') signupSubmitBtn.click();
-        });
-    });
-
-    // ── Init: restore session on page load ───────────────────
-    refreshNavUI();
-
-    // ── Expose helpers globally for the rest of the app ──────
-    window.openAuthModal = openAuthModal;
-    window.isLoggedIn = () => !!getSession();
-    window.loadMyListFromLocalStorage = function() {
-        try {
-            myList = JSON.parse(localStorage.getItem("cinxphere_mylist")) || [];
-        } catch (e) {
-            myList = [];
-        }
-        if (activeTab === "mylist") {
-            viewMyList();
-        }
+// openAuthModal is exposed by firebase-auth.js; provide a safe fallback
+if (!window.openAuthModal) {
+    window.openAuthModal = function () {
+        const modal = document.getElementById('authModal');
+        if (modal) modal.style.display = 'flex';
     };
-})();
+}
+
+window.loadMyListFromLocalStorage = function () {
+    try {
+        myList = JSON.parse(localStorage.getItem("cinxphere_mylist")) || [];
+    } catch (e) {
+        myList = [];
+    }
+    if (activeTab === "mylist") {
+        viewMyList();
+    }
+};
