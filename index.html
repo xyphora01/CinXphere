@@ -158,7 +158,6 @@
             <div class="auth-tabs">
                 <button class="auth-tab active" id="tabLogin" data-tab="login">Sign In</button>
                 <button class="auth-tab" id="tabSignup" data-tab="signup">Sign Up</button>
-                <button class="auth-tab" id="tabPhone" data-tab="phone">Phone</button>
             </div>
 
             <!-- Login Panel -->
@@ -242,40 +241,7 @@
                 <p class="auth-switch">Already have an account? <a href="#" id="goToLogin">Sign in</a></p>
             </div>
 
-            <!-- Phone Panel -->
-            <div class="auth-panel" id="panelPhone" style="display:none;">
-                <div class="auth-brand">
-                    <i class="fa-solid fa-film"></i>
-                    <span>CinXphere</span>
-                </div>
-                <h2 class="auth-title">Sign in with phone</h2>
-                <p class="auth-subtitle">We'll text you a one-time verification code</p>
 
-                <div class="auth-form" id="phoneNumberForm">
-                    <div class="auth-input-group">
-                        <i class="fa-solid fa-phone"></i>
-                        <input type="tel" id="phoneNumberInput" placeholder="+91 98765 43210" autocomplete="tel">
-                    </div>
-                    <p class="auth-hint">Include your country code, e.g. <strong>+91</strong> for India.</p>
-                    <p class="auth-error" id="phoneError"></p>
-                    <button class="auth-submit-btn" id="sendOtpBtn">Send Code <i
-                            class="fa-solid fa-arrow-right"></i></button>
-                </div>
-
-                <div class="auth-form" id="otpForm" style="display:none;">
-                    <div class="auth-input-group">
-                        <i class="fa-solid fa-key"></i>
-                        <input type="text" id="otpInput" placeholder="6-digit code" inputmode="numeric" maxlength="6">
-                    </div>
-                    <p class="auth-error" id="otpError"></p>
-                    <button class="auth-submit-btn" id="verifyOtpBtn">Verify & Sign In <i
-                            class="fa-solid fa-check"></i></button>
-                    <p class="auth-switch"><a href="#" id="changePhoneNumber">Use a different number</a></p>
-                </div>
-
-                <!-- Invisible reCAPTCHA anchor required by Firebase Phone Auth -->
-                <div id="recaptchaContainer"></div>
-            </div>
         </div>
     </div>
 
