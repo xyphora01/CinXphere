@@ -7,9 +7,7 @@ import {
     signOut,
     updateProfile,
     GoogleAuthProvider,
-    signInWithPopup,
-    signInWithRedirect,
-    getRedirectResult
+    signInWithPopup
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 import {
@@ -120,10 +118,15 @@ async function handleGoogleSignIn(triggerBtn) {
     triggerBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Connecting...';
 
     try {
-        await signInWithRedirect(auth, googleProvider);
-    } catch (redirectError) {
-        console.error('Google sign-in redirect error:', redirectError);
-        showAuthError(redirectError.message.replace('Firebase: ', ''));
+        // Use signInWithPopup — works on all hosts without domain redirect issues
+        const result = await signInWithPopup(auth, googleProvider);
+        if (result && result.user) closeAuthModal();
+    } catch (popupError) {
+        // Ignore user-dismissed popup (not a real error)
+        if (popupError.code !== 'auth/popup-closed-by-user' && popupError.code !== 'auth/cancelled-popup-request') {
+            console.error('Google sign-in error:', popupError);
+            showAuthError(popupError.message.replace('Firebase: ', ''));
+        }
     } finally {
         triggerBtn.disabled = false;
         triggerBtn.innerHTML = originalText;
@@ -188,13 +191,6 @@ function clearErrors() {
     if (loginError) loginError.innerText = '';
     if (signupError) signupError.innerText = '';
 }
-
-// ─── Handle redirect result on page load ──────────────────────────────────────
-getRedirectResult(auth).then((result) => {
-    if (result && result.user) closeAuthModal();
-}).catch((error) => {
-    console.error('Redirect result error:', error.code, error.message);
-});
 
 // ─── DOM Setup (safe — wrapped so one missing element can't crash everything) ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -420,8 +416,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
         console.error('CinXphere Auth setup error:', err);
     }
-    // Expose utility functions globally
-    window.isLoggedIn = () => !!auth.currentUser;
-    window.openAuthModal = openAuthModal;
-    window.closeAuthModal = closeAuthModal;
 });
+
+// Expose utility functions globally (outside DOMContentLoaded so script.js can access them immediately)
+window.isLoggedIn = () => !!auth.currentUser;
+window.openAuthModal = openAuthModal;
+window.closeAuthModal = closeAuthModal;
