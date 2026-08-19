@@ -378,7 +378,7 @@ const performSearch = async () => {
     try {
         const response = await fetch(`${BASE_URL}/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&page=1`);
         const data = await response.json();
-        const results = data.results.filter(item => item.media_type === "movie" || item.media_type === "tv");
+        const results = (data.results || []).filter(item => item.media_type === "movie" || item.media_type === "tv");
 
         cacheMovies(results);
         searchGrid.innerHTML = "";
@@ -442,7 +442,7 @@ async function fetchPageResults() {
     try {
         const response = await fetch(`${BASE_URL}/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(currentSearchQuery)}&page=${searchPage}`);
         const data = await response.json();
-        const results = data.results.filter(item => item.media_type === "movie" || item.media_type === "tv");
+        const results = (data.results || []).filter(item => item.media_type === "movie" || item.media_type === "tv");
 
         cacheMovies(results);
         searchGrid.innerHTML = "";
@@ -676,12 +676,12 @@ function triggerStreamInterface(movieId, mediaType = "movie", season = 1, episod
 
     const title = detailTitle.textContent || "";
     const subtitle = mediaType === "tv" ? `Season ${season} • Episode ${episode}` : "Full Movie";
-    
+
     // Log playback event to Firebase Firestore for admin dashboard charts
     if (window.logPlaybackEventToFirestore) {
         window.logPlaybackEventToFirestore(movieId, mediaType, title);
     }
-    
+
     openPlayerModal(targetEmbedUrl, title, subtitle);
 }
 
@@ -729,7 +729,7 @@ function toggleBookmark(movie, mediaType = "movie") {
         myList.splice(index, 1);
     }
     localStorage.setItem("cinxphere_mylist", JSON.stringify(myList));
-    
+
     // Sync watchlist to Firebase Firestore for admin view
     if (window.syncWatchlistToFirestore) {
         window.syncWatchlistToFirestore(myList);
@@ -951,7 +951,7 @@ init();
 // WATCHLIST SYNC INTERFACE
 // ==========================================
 
-window.loadMyListFromLocalStorage = function() {
+window.loadMyListFromLocalStorage = function () {
     try {
         myList = JSON.parse(localStorage.getItem("cinxphere_mylist")) || [];
     } catch (e) {
